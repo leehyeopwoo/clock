@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Server Time Clock</title>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      font-family: monospace;
+      font-size: 6em;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="clock">Loading...</div>
+  <script>
+    let offset = 0;
+
+    async function syncServerTime() {
+      try {
+        const t0 = Date.now();
+        const res = await fetch("https://timeapi.io/api/Time/current/zone?timeZone=UTC");
+        const t1 = Date.now();
+
+        const json = await res.json();
+
+        // 숫자 패딩 함수
+        const pad = (n) => n.toString().padStart(2, '0');
+        const pad3 = (n) => n.toString().padStart(3, '0');
+
+        // 문자열로 UTC 시간 구성
+        const timeStr = `${json.year}-${pad(json.month)}-${pad(json.day)}T${pad(json.hour)}:${pad(json.minute)}:${pad(json.seconds)}.${pad3(json.milliSeconds)}Z`;
+        const serverTime = new Date(timeStr).getTime();
+
+        const rtt = (t1 - t0) / 2;
+        offset = serverTime - (t1 - rtt);
+
+        console.log("Server time string:", timeStr);
+        console.log("Offset (ms):", offset);
+      } catch (err) {
+        document.getElementById("clock").textContent = "Error loading time";
+        console.error("Fetch error:", err);
+      }
+    }
+
+    function updateClock() {
+      const now = new Date(Date.now() + offset);
+      const h = now.getHours().toString().padStart(2, '0');
+      const m = now.getMinutes().toString().padStart(2, '0');
+      const s = now.getSeconds().toString().padStart(2, '0');
+      const ms = now.getMilliseconds().toString().padStart(3, '0');
+      document.getElementById("clock").textContent = `${h}:${m}:${s}.${ms}`;
+    }
+
+    syncServerTime().then(() => {
+      setInterval(updateClock, 10);
+    });
+  </script>
+</body>
+</html>
