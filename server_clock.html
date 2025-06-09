@@ -10,6 +10,7 @@
       font-family: monospace;
       font-size: 6em;
       display: flex;
+      font-weight: 300;  /* ← 여기 추가! */
       justify-content: center;
       align-items: center;
       height: 100vh;
@@ -54,7 +55,7 @@
       const m = now.getMinutes().toString().padStart(2, '0');
       const s = now.getSeconds().toString().padStart(2, '0');
       const ms = now.getMilliseconds().toString().padStart(3, '0');
-      document.getElementById("clock").textContent = `${h}:${m}:${s}.${ms}`;
+      document.getElementById("clock").textContent = `${h}${m}${s}${ms}`;
     }
 
     syncServerTime().then(() => {
