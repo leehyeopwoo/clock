@@ -2,15 +2,14 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Server Time Clock</title>
+  <title>Precise Clock</title>
   <style>
     body {
       background-color: black;
       color: white;
       font-family: monospace;
-      font-size: 6em;
+      font-size: 4em;
       display: flex;
-      font-weight: 300;  /* ← 여기 추가! */
       justify-content: center;
       align-items: center;
       height: 100vh;
@@ -19,47 +18,45 @@
 </head>
 <body>
   <div id="clock">Loading...</div>
+
   <script>
     let offset = 0;
 
-    async function syncServerTime() {
+    async function syncTime() {
       try {
         const t0 = Date.now();
-        //const res = await fetch("https://timeapi.io/api/Time/current/zone?timeZone=UTC");
-        const res = await fetch("https://timeapi.io/api/Time/current/zone?timeZone=Asia/Seoul");
+        const res = await fetch("http://kolomverse.iptime.org:30093/time");
         const t1 = Date.now();
-
         const json = await res.json();
 
-        // 숫자 패딩 함수
-        const pad = (n) => n.toString().padStart(2, '0');
-        const pad3 = (n) => n.toString().padStart(3, '0');
+        const serverTime = json.timestamp * 1000;  // 초 → ms
+        const rtt = t1 - t0;
+        const latency = rtt / 2;
 
-        // 문자열로 UTC 시간 구성
-        const timeStr = `${json.year}-${pad(json.month)}-${pad(json.day)}T${pad(json.hour)}:${pad(json.minute)}:${pad(json.seconds)}.${pad3(json.milliSeconds)}Z`;
-        const serverTime = new Date(timeStr).getTime();
-
-        const rtt = (t1 - t0) / 2;
-        offset = serverTime - (t1 - rtt);
-
-        console.log("Server time string:", timeStr);
-        console.log("Offset (ms):", offset);
-      } catch (err) {
+        offset = serverTime - (t1 - latency);
+      } catch (e) {
         document.getElementById("clock").textContent = "Error loading time";
-        console.error("Fetch error:", err);
+        console.error(e);
       }
     }
 
     function updateClock() {
       const now = new Date(Date.now() + offset);
-      const h = now.getHours().toString().padStart(2, '0');
-      const m = now.getMinutes().toString().padStart(2, '0');
-      const s = now.getSeconds().toString().padStart(2, '0');
+
+      const yyyy = now.getFullYear().toString();
+      const MM = (now.getMonth() + 1).toString().padStart(2, '0');
+      const dd = now.getDate().toString().padStart(2, '0');
+      const hh = now.getHours().toString().padStart(2, '0');
+      const mm = now.getMinutes().toString().padStart(2, '0');
+      const ss = now.getSeconds().toString().padStart(2, '0');
       const ms = now.getMilliseconds().toString().padStart(3, '0');
-      document.getElementById("clock").textContent = `${h}${m}${s}${ms}`;
+
+      const fullTimeStr = `${yyyy}${MM}${dd}${hh}${mm}${ss}${ms}`;
+      document.getElementById("clock").textContent = fullTimeStr;
     }
 
-    syncServerTime().then(() => {
+    syncTime().then(() => {
+      updateClock();
       setInterval(updateClock, 10);
     });
   </script>
