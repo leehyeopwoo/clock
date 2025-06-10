@@ -10,14 +10,22 @@
       font-family: monospace;
       font-size: 4em;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
+    .synced {
+      color: #888888; /* 회색 */
+    }
+    .local {
+      color: white; /* 흰색 */
+    }
   </style>
 </head>
 <body>
-  <div id="clock">Loading...</div>
+  <div id="synced-time" class="synced">Loading...</div>
+  <div id="local-time" class="local">Loading...</div>
 
   <script>
     let offset = 0;
@@ -25,40 +33,49 @@
     async function syncTime() {
       try {
         const t0 = Date.now();
-        const res = await fetch("http://kolomverse.iptime.org:30093/time");
+        const res = await fetch("http://kolomverse.iptime.org:30093/time", { cache: "no-store" });
         const t1 = Date.now();
         const json = await res.json();
 
-        const serverTime = json.timestamp * 1000;  // 초 → ms
+        const serverTime = json.timestamp * 1000; // 초 → 밀리초
         const rtt = t1 - t0;
         const latency = rtt / 2;
 
         offset = serverTime - (t1 - latency);
+        console.log(`✅ Synced. Offset: ${offset.toFixed(0)}ms`);
       } catch (e) {
-        document.getElementById("clock").textContent = "Error loading time";
-        console.error(e);
+        offset = 0;
+        console.warn("⚠ Time sync failed. Falling back to local time.");
       }
     }
 
-    function updateClock() {
-      const now = new Date(Date.now() + offset);
-
-      const yy = now.getFullYear().toString().slice(-2);
-      const MM = (now.getMonth() + 1).toString().padStart(2, '0');
-      const dd = now.getDate().toString().padStart(2, '0');
-      const hh = now.getHours().toString().padStart(2, '0');
-      const mm = now.getMinutes().toString().padStart(2, '0');
-      const ss = now.getSeconds().toString().padStart(2, '0');
-      const ms = now.getMilliseconds().toString().padStart(3, '0');
-
-      const fullTimeStr = `${yy}${MM}${dd}${hh}${mm}${ss}${ms}`;
-      document.getElementById("clock").textContent = fullTimeStr;
+    function formatTime(date) {
+      const yy = date.getFullYear().toString().slice(-2);
+      const MM = (date.getMonth() + 1).toString().padStart(2, '0');
+      const dd = date.getDate().toString().padStart(2, '0');
+      const hh = date.getHours().toString().padStart(2, '0');
+      const mm = date.getMinutes().toString().padStart(2, '0');
+      const ss = date.getSeconds().toString().padStart(2, '0');
+      const ms = date.getMilliseconds().toString().padStart(3, '0');
+      return `${yy}${MM}${dd}${hh}${mm}${ss}${ms}`;
     }
 
-    syncTime().then(() => {
+    function updateClock() {
+      const synced = new Date(Date.now() + offset);
+      const local = new Date();
+
+      document.getElementById("synced-time").textContent = formatTime(synced);
+      document.getElementById("local-time").textContent = formatTime(local);
+    }
+
+    async function start() {
+      await syncTime();
       updateClock();
       setInterval(updateClock, 10);
-    });
+      setInterval(syncTime, 10000); // 10초마다 동기화 시도
+    }
+
+    start();
   </script>
 </body>
 </html>
