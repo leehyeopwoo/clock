@@ -15,17 +15,27 @@
       align-items: center;
       height: 100vh;
     }
+
     .synced {
       color: #888888; /* 회색 */
     }
+
     .local {
-      color: white; /* 흰색 */
+      color: white;
+      margin-top: 0.3em; /* 줄 간격용 여백 */
+    }
+
+    .offset {
+      font-size: 0.3em;
+      color: #888888;
+      margin-top: 0.5em;
     }
   </style>
 </head>
 <body>
   <div id="synced-time" class="synced">Loading...</div>
   <div id="local-time" class="local">Loading...</div>
+  <div id="offset-display" class="offset">offset: 0 ms</div>
 
   <script>
     let offset = 0;
@@ -37,7 +47,7 @@
         const t1 = Date.now();
         const json = await res.json();
 
-        const serverTime = json.timestamp * 1000; // 초 → 밀리초
+        const serverTime = json.timestamp * 1000;
         const rtt = t1 - t0;
         const latency = rtt / 2;
 
@@ -66,13 +76,14 @@
 
       document.getElementById("synced-time").textContent = formatTime(synced);
       document.getElementById("local-time").textContent = formatTime(local);
+      document.getElementById("offset-display").textContent = `offset: ${offset.toFixed(0)} ms`;
     }
 
     async function start() {
       await syncTime();
       updateClock();
       setInterval(updateClock, 10);
-      setInterval(syncTime, 10000); // 10초마다 동기화 시도
+      setInterval(syncTime, 10000); // 10초마다 동기화
     }
 
     start();
